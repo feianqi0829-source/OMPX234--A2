@@ -55,8 +55,11 @@ class ReadersWritersMonitor:
         """
         with self.condition:
             # TODO: Replace 'pass' with your logic
-            pass
+            while self.active_writers > 0:
+                self.condition.wait()
 
+            self.active_readers += 1
+            print(f"Reader {reader_id} starts reading. Active readers = {self.active_readers}")
     def end_read(self, reader_id: int) -> None:
         """
         Called after a reader finishes reading.
@@ -68,8 +71,8 @@ class ReadersWritersMonitor:
         """
         with self.condition:
             # TODO: Replace 'pass' with your logic
-            pass
-
+            self.active_readers -= 1
+            print(f"Reader {reader_id} stops reading. Active readers = {self.active_readers}")
     def start_write(self, writer_id: int) -> None:
         """
         Called before a writer starts writing.
@@ -81,11 +84,11 @@ class ReadersWritersMonitor:
         3. Update counters carefully when the writer can proceed.
         4. Print a useful log message.
         """
-        with self.condition:
+        if self.active_readers == 0:
             # TODO: Replace 'pass' with your logic
-            pass
+           self.condition.notify_all()
 
-    def end_write(self, writer_id: int) -> None:
+    def start_write(self, writer_id: int) -> None:
         """
         Called after a writer finishes writing.
 
@@ -96,8 +99,17 @@ class ReadersWritersMonitor:
         """
         with self.condition:
             # TODO: Replace 'pass' with your logic
-            pass
-
+            self.waiting_writers += 1
+            while self.active_readers > 0 or self.active_writers > 0:
+                self.condition.wait()
+            self.waiting_writers -= 1
+            self.active_writers += 1
+            print(f"Writer {writer_id} starts writing")
+def end_write(self, writer_id: int) -> None:
+    with self.condition:
+        self.active_writers -= 1
+        print(f"Writer {writer_id} stops writing")
+        self.condition.notify_all()
 # Donot Change this
 class Reader(threading.Thread):
     def __init__(self, reader_id: int, monitor: ReadersWritersMonitor, rounds: int = 3) -> None:
@@ -157,24 +169,29 @@ def main() -> None:
 
     #TODO: Create at least 3 Reader threads.
     readers = [
-        Reader(reader_id=1, monitor=monitor)
+        Reader(reader_id=1, monitor=monitor),
+        Reader(reader_id=2, monitor=monitor),
+        Reader(reader_id=3, monitor=monitor)
     ]
     
     #TODO: Create at least 2 writer threads.
     writers = [
-        Writer(writer_id=1, monitor=monitor)
+        Writer(writer_id=1, monitor=monitor),
+        Writer(writer_id=2, monitor=monitor)
     ]
 
     all_threads = readers + writers
     
     # TODO: Start all threads
-
+    for thread in all_threads:
+        thread.start()
+        
     
     # TODO: Wait for all threads to finish
-
-
+    for thread in all_threads:
+        thread.join()
     # TODO: Print final message that simulation completed
-
+    print("Simulation completed successfully.")
 
 if __name__ == "__main__":
     main()
